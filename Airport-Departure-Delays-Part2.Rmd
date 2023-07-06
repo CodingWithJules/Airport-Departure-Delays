@@ -1,0 +1,72 @@
+---
+title: "Airport Departure Delays: Part 2"
+author: "Jules Gdovic"
+date: "6/25/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(nycflights13)
+library(knitr)
+library(ggplot2)
+library(plotrix)
+library(lubridate)
+```
+
+```{r}
+flites_dest_names <- flights%>%
+  inner_join(airports, by = c("dest" = "faa")) %>%
+  rename(dest_airport=name)
+```
+
+```{r}
+flites_day <- flites_dest_names %>%
+  mutate(weekday = wday(time_hour))
+```
+
+```{r}
+flites_per_weekday <- flites_day %>%
+  group_by(weekday) %>%
+  summarize(number_of_flights = n())
+```
+
+
+```{r}
+flites_day$weekday <- factor(flites_day$weekday,
+                             labels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+                                        "Friday", "Saturday"))
+```
+
+
+```{r}
+summary_dep_delay <- flites_day %>%
+  group_by(origin, weekday) %>%
+  summarize(mean = mean(dep_delay, na.rm = TRUE),
+            std_dev = sd(dep_delay, na.rm = TRUE),
+            std_err = std.error(dep_delay, na.rm = TRUE))
+```
+
+## Departure Delays
+```{r}
+kable(summary_dep_delay)
+```
+
+## Departure Delays Graph
+```{r}
+ggplot(summary_dep_delay, aes(x=weekday, y=mean)) +
+  geom_bar(stat="identity", color="black", fill = "gray65", width=0.3)+
+  geom_errorbar(aes(ymax=mean+std_err, ymin=mean-std_err), width=0.05)+
+  facet_grid(origin ~ .)+
+  labs(y="Mean Departure Delay (min)")
+```
+
+
+
+
+
+
